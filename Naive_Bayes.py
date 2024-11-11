@@ -43,7 +43,7 @@ def predict(model, new_instance):
             if attribute in model['_means']:
                 # Handling numerical atributes
                 mean = model['_means'][attribute][class_value]
-                var = model['_vars'][attribute][class_value] + 1e-9  # Dodaj mali broj da izbegne deljenje nulom
+                var = model['_vars'][attribute][class_value] + 1e-9  # Add a small number to avoid division by zero
                 x = new_instance[attribute]
                 prob = -0.5 * np.log(2 * np.pi * var) - ((x - mean) ** 2) / (2 * var)
                 probability += prob
@@ -59,3 +59,30 @@ def predict(model, new_instance):
 
     prediction = max(class_probabilities, key=class_probabilities.get)
     return prediction, class_probabilities
+
+
+#%% TEST
+def load_data(file_path, test_size=0.3, random_state=7):
+    
+    data = pd.read_csv(file_path)
+    
+    X_train, data_new = train_test_split(data, test_size=test_size, random_state=random_state)
+    return X_train, data_new
+
+X_train, data_new = load_data('drug.csv') #example data is drug.csv
+class_att = X_train.columns[-1]
+model = learn(X_train, class_att, smoothing=0.3)
+
+for index in data_new.index:
+    # Extract rows from test_data based on indices
+    instance = data_new.loc[index]
+    
+    # Prediction for the current row
+    prediction, confidence = predict(model, instance)
+    
+    # Update the `data_new` DataFrame with predictions
+    data_new.loc[index, 'prediction'] = prediction
+    for klasa in confidence:
+        data_new.loc[index, 'class=' + klasa] = confidence.get(klasa, 0)  # Use the default value 0 if the key is not present
+
+print(data_new)
